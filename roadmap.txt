@@ -1,0 +1,61 @@
+================================================================================
+                    AI HEALTH SUITE - HOJA DE RUTA Y CONTEXTO
+================================================================================
+
+Este archivo sirve como registro vivo de nuestra conversación, el estado del proyecto
+y las versiones respaldadas. Permite al desarrollador y a la IA saber exactamente
+en qué punto nos encontramos y cómo restaurar versiones anteriores.
+
+--------------------------------------------------------------------------------
+1. RESUMEN DE LA CONVERSACIÓN
+--------------------------------------------------------------------------------
+* [2026-05-20] Inicio de la sesión.
+* El usuario indica que se encuentra en un curso de IA aplicada al sector sanitario
+  en Mojácar y abre la carpeta local vacía `Curso mojacar`.
+* Se proponen 3 proyectos posibles: Asistente de Triaje, Analizador de Pruebas Clínicas,
+  y Calculadora de Riesgo Clínico.
+* El usuario solicita unificar las 3 propuestas útiles en una sola aplicación web,
+  crear un archivo .txt con la hoja de ruta y nuestra conversación, y configurar
+  un sistema de backups para revertir cambios no deseados.
+* [Estado Actual]: Esperando aprobación del plan de diseño e inicio del desarrollo.
+
+--------------------------------------------------------------------------------
+2. HOJA DE RUTA DEL DESARROLLO (MILESTONES)
+--------------------------------------------------------------------------------
+[ ] FASE 0: Inicialización y Estructura de Backups (Git + Scripts)
+    - Inicializar repositorio Git local.
+    - Crear script de backup tradicional por si se prefiere.
+[ ] FASE 1: Estructura Base y Diseño Premium (HTML/CSS)
+    - Crear index.html con barra lateral (Sidebar) de navegación.
+    - Diseñar la hoja de estilos styles.css con modo oscuro, glassmorfismo y efectos visuales.
+[ ] FASE 2: Módulo 1 - Asistente de Triaje Inteligente
+    - Crear la interfaz de conversación de triaje en app.js y modules/triage.js.
+    - Implementar lógica de palabras clave de síntomas y asignación de prioridad clínica.
+[ ] FASE 3: Módulo 2 - Analizador de Imágenes y Biomarcadores
+    - Generar imagen de radiografía por IA y colocarla en assets/xray.jpg.
+    - Diseñar el visor con láser de escaneo animado y cajas de detección en modules/analyzer.js.
+    - Implementar la tabla interactiva de biomarcadores fuera de rango.
+[ ] FASE 4: Módulo 3 - Calculadora de Riesgo Clínico y Explicabilidad (XAI)
+    - Crear sliders interactivos y medidor central (gauge) en modules/risk.js.
+    - Dibujar el gráfico de barras explicativo (Feature Importance) dinámico.
+[ ] FASE 5: Integración, Pruebas y Ajustes Finales
+    - Validar fluidez general de la aplicación.
+    - Asegurar que todo funcione localmente con doble clic en el index.html.
+
+--------------------------------------------------------------------------------
+3. SISTEMA DE COPIAS DE SEGURIDAD (BACKUP & CONTROL DE VERSIONES)
+--------------------------------------------------------------------------------
+Hemos configurado Git para gestionar las versiones de forma profesional. 
+
+¿CÓMO RECUPERAR UNA VERSIÓN ANTERIOR SI ALGO NO TE GUSTA?
+1. Ver el historial de commits (puntos de guardado):
+   > git log --oneline
+2. Deshacer todos los cambios no guardados y volver al último punto de guardado:
+   > git reset --hard HEAD
+3. Volver temporalmente a un commit específico para ver cómo era:
+   > git checkout <codigo-de-commit>
+4. Volver a la última versión de trabajo después de explorar:
+   > git checkout main (o master)
+
+*Adicionalmente, si lo solicitas, podemos crear copias completas de la carpeta en /backups/.*
+================================================================================
