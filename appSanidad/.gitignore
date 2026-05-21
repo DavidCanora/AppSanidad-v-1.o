@@ -3,7 +3,6 @@ __pycache__/
 *.pyc
 .env
 temp_uploads/
-appSanidad/temp_uploads/
 response_output.json
 response_output.txt
 log_output.txt

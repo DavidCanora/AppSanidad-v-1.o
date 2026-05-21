@@ -1,0 +1,13 @@
+{
+  "name": "sanidad-inteligente",
+  "version": "1.0.0",
+  "description": "Aplicación de IA en el Sector Sanitario - Curso Mojácar",
+  "main": "index.html",
+  "scripts": {
+    "dev": "http-server -a 0.0.0.0 -p 8080"
+  },
+  "dependencies": {},
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
