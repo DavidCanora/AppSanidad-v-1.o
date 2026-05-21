@@ -9,38 +9,41 @@ en qué punto nos encontramos y cómo restaurar versiones anteriores.
 --------------------------------------------------------------------------------
 1. RESUMEN DE LA CONVERSACIÓN
 --------------------------------------------------------------------------------
-* [2026-05-20] Inicio de la sesión.
-* El usuario indica que se encuentra en un curso de IA aplicada al sector sanitario
-  en Mojácar y abre la carpeta local vacía `Curso mojacar`.
-* Se proponen 3 proyectos posibles: Asistente de Triaje, Analizador de Pruebas Clínicas,
-  y Calculadora de Riesgo Clínico.
-* El usuario solicita unificar las 3 propuestas útiles en una sola aplicación web,
-  crear un archivo .txt con la hoja de ruta y nuestra conversación, y configurar
-  un sistema de backups para revertir cambios no deseados.
-* [Estado Actual]: Esperando aprobación del plan de diseño e inicio del desarrollo.
+* [2026-05-20] Inicio de la sesión. El usuario está en un curso en Mojácar.
+* Se propone integrar las 3 ideas (Triaje, Analizador, Calculadora de Riesgo) en
+  un mismo proyecto unificado llamado "Sanidad Inteligente".
+* Se inicializa Git para backups y se crea este archivo.
+* [2026-05-21] Se diseñan y escriben las vistas base y lógicas de los módulos:
+  - Interfaz de chat de triaje e interpretación de lenguaje natural.
+  - Visor de radiografía escaneada con IA e identificación de anomalías en biomarcadores.
+  - Formulario clínico y gráfico explicativo (XAI) de riesgo cardiovascular.
+  - Modal con generación dinámica de código QR para probar la app en móviles.
+* Se instala el servidor de desarrollo local y se prepara para el despliegue en red.
+* [Estado Actual]: Código completo. Iniciando servidor local para pruebas en móvil.
 
 --------------------------------------------------------------------------------
 2. HOJA DE RUTA DEL DESARROLLO (MILESTONES)
 --------------------------------------------------------------------------------
-[ ] FASE 0: Inicialización y Estructura de Backups (Git + Scripts)
+[x] FASE 0: Inicialización y Estructura de Backups (Git + Scripts)
     - Inicializar repositorio Git local.
-    - Crear script de backup tradicional por si se prefiere.
-[ ] FASE 1: Estructura Base y Diseño Premium (HTML/CSS)
+    - Configurar y comprobar IP local (10.206.216.31).
+[x] FASE 1: Estructura Base y Diseño Premium (HTML/CSS)
     - Crear index.html con barra lateral (Sidebar) de navegación.
     - Diseñar la hoja de estilos styles.css con modo oscuro, glassmorfismo y efectos visuales.
-[ ] FASE 2: Módulo 1 - Asistente de Triaje Inteligente
+[x] FASE 2: Módulo 1 - Asistente de Triaje Inteligente
     - Crear la interfaz de conversación de triaje en app.js y modules/triage.js.
     - Implementar lógica de palabras clave de síntomas y asignación de prioridad clínica.
-[ ] FASE 3: Módulo 2 - Analizador de Imágenes y Biomarcadores
-    - Generar imagen de radiografía por IA y colocarla en assets/xray.jpg.
+[x] FASE 3: Módulo 2 - Analizador de Imágenes y Biomarcadores
+    - Generar imagen de radiografía por IA y colocarla en assets/xray.png.
     - Diseñar el visor con láser de escaneo animado y cajas de detección en modules/analyzer.js.
     - Implementar la tabla interactiva de biomarcadores fuera de rango.
-[ ] FASE 4: Módulo 3 - Calculadora de Riesgo Clínico y Explicabilidad (XAI)
+[x] FASE 4: Módulo 3 - Calculadora de Riesgo Clínico y Explicabilidad (XAI)
     - Crear sliders interactivos y medidor central (gauge) en modules/risk.js.
     - Dibujar el gráfico de barras explicativo (Feature Importance) dinámico.
-[ ] FASE 5: Integración, Pruebas y Ajustes Finales
-    - Validar fluidez general de la aplicación.
-    - Asegurar que todo funcione localmente con doble clic en el index.html.
+[/] FASE 5: Integración, Pruebas y Ajustes Finales
+    - Iniciar el servidor local para acceso por red.
+    - Validar la visualización responsiva y correcta en el teléfono móvil del usuario.
+    - Confirmar que todo funcione sin fallos.
 
 --------------------------------------------------------------------------------
 3. SISTEMA DE COPIAS DE SEGURIDAD (BACKUP & CONTROL DE VERSIONES)
