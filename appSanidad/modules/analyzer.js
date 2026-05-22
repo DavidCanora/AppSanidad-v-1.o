@@ -306,9 +306,23 @@ const AnalyzerModule = {
             window.showToast("✓ Análisis IA completado");
 
         } catch (err) {
-            const currentCase = this.caseSelect.value;
-            this.biomarkers = this.cases[currentCase];
-            window.showToast("Backend offline — mostrando caso de demo.");
+            this.biomarkers = [
+                {
+                    name: "⚠️ Error de Conexión",
+                    value: "El servidor de IA no respondió",
+                    ref: "Servidor Offline o Timeout",
+                    status: "high",
+                    statusTxt: "Error"
+                },
+                {
+                    name: "📋 Diagnóstico Alternativo",
+                    value: "Verifique su conexión o ejecute en local",
+                    ref: err.message,
+                    status: "high",
+                    statusTxt: "Aviso"
+                }
+            ];
+            window.showToast("Error de análisis: sin respuesta del servidor.");
         }
 
         const elapsed = Date.now() - startTime;

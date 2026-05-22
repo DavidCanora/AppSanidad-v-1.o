@@ -77,12 +77,10 @@ document.addEventListener("DOMContentLoaded", () => {
 });
 
 window.getApiBaseUrl = function() {
-    const hostname = window.location.hostname;
-    if (hostname && hostname !== "localhost" && hostname !== "127.0.0.1" && !hostname.endsWith(".loca.lt")) {
-        // Dynamic detection for local network IP access
-        return `http://${hostname}:8000`;
+    if (window.location.port === "8080") {
+        return `http://${window.location.hostname}:8000`;
     }
-    return "http://localhost:8000";
+    return window.location.origin;
 };
 
 function checkApiStatus() {

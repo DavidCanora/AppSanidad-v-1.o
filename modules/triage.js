@@ -1,3 +1,7 @@
+const cleanText = (str) => str.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase();
+const containsAny = (str, words) => words.some(word => str.includes(word));
+const containsAll = (str, wordGroups) => wordGroups.every(group => containsAny(str, group));
+
 const TriageModule = {
     levels: {
         EMERGENCY: {
@@ -54,14 +58,13 @@ const TriageModule = {
             precaution: "No suministrar alimentos, bebidas ni medicamentos sin supervisión directa. DISCLAIMER: La IA no reemplaza al diagnóstico médico.",
             match(q) {
                 return (
-                    (q.includes("pecho") && (q.includes("dolor") || q.includes("presion"))) ||
-                    (q.includes("respirar") && (q.includes("no puedo") || q.includes("asfixia") || q.includes("dificultad grave"))) ||
-                    q.includes("inconsciente") ||
-                    q.includes("no responde") ||
-                    q.includes("infarto") ||
-                    (q.includes("sangrado") && q.includes("abundante")) ||
-                    q.includes("parada") ||
-                    q.includes("asfixia")
+                    containsAll(q, [["pecho", "toracic", "corazon", "esternal", "precordial"], ["dolor", "duele", "presion", "opresion", "ahogo", "punzada", "fuerte", "agudo", "aprieta", "molestia", "molesta"]]) ||
+                    containsAny(q, ["asfixi", "atragant", "ahog"]) ||
+                    containsAll(q, [["respirar", "respiracion", "aire", "disnea"], ["no puedo", "falta", "dificultad grave", "grave", "insuficiente", "cuesta mucho"]]) ||
+                    containsAny(q, ["inconsciente", "desmayo", "desvanecido", "no responde", "sin respuesta", "perdida de conocimiento", "desmayado", "comatoso"]) ||
+                    containsAny(q, ["infarto", "parada", "paro", "paro cardiaco", "ataque al corazon", "parada cardiaca"]) ||
+                    containsAll(q, [["sangrado", "hemorragia", "sangre"], ["abundante", "profuso", "mucha", "no para", "chorro", "masiva"]]) ||
+                    containsAny(q, ["shock", "convulsion", "convulsiones"])
                 );
             }
         },
@@ -71,21 +74,16 @@ const TriageModule = {
             precaution: "Evitar golpes, reposo absoluto, no consumir aspirina ni AINEs. DISCLAIMER: La IA no es un diagnóstico médico profesional.",
             match(q) {
                 return (
-                    (q.includes("fiebre") && (q.includes("bebe") || q.includes("lactante") || q.includes("40"))) ||
-                    q.includes("fractura abierta") ||
-                    (q.includes("dolor") && q.includes("insoportable")) ||
-                    (q.includes("quemadura") && q.includes("grave")) ||
-                    (q.includes("debilidad") && q.includes("cara")) ||
-                    q.includes("hablar") ||
-                    q.includes("ictus") ||
-                    q.includes("derrame") ||
-                    q.includes("intoxicacion") ||
-                    q.includes("veneno") ||
-                    q.includes("trombocitopenia") ||
-                    q.includes("plaquetas bajas") ||
-                    q.includes("petequias") ||
-                    q.includes("hematomas sin") ||
-                    q.includes("sangrado encia")
+                    containsAll(q, [["fiebre", "temperatura", "calentura"], ["bebe", "lactante", "neonato", "recien nacido", "crio", "nene"]]) ||
+                    (containsAny(q, ["fiebre", "temperatura", "calentura"]) && (q.includes("40") || q.includes("41") || q.includes("39.5") || q.includes("39,5"))) ||
+                    containsAny(q, ["fractura abierta", "hueso expuesto", "hueso fuera", "hueso roto expuesto"]) ||
+                    containsAll(q, [["dolor", "duele"], ["insoportable", "muy fuerte", "extremo", "intenso", "agudo", "terrible", "horroroso"]]) ||
+                    containsAll(q, [["quemadura", "quemado"], ["grave", "tercer grado", "segundo grado", "extensa", "ampollas grandes"]]) ||
+                    containsAny(q, ["ictus", "derrame cerebral", "embolia", "paralisis", "hemiplejia"]) ||
+                    (containsAny(q, ["debilidad", "adormecido", "paralizado", "torcido"]) && containsAny(q, ["cara", "rostro", "brazo", "pierna", "lado", "mitad cuerpo"])) ||
+                    containsAny(q, ["dificultad para hablar", "no puede hablar", "habla rara", "hablar mal"]) ||
+                    containsAny(q, ["intoxicacion", "veneno", "sobredosis", "envenenado", "envenenamiento", "ingerido quimico"]) ||
+                    containsAny(q, ["trombocitopenia", "plaquetas bajas", "petequias", "hematomas sin", "sangrado encia", "sangrado de encia", "sangrado de encias"])
                 );
             }
         },
@@ -95,13 +93,12 @@ const TriageModule = {
             precaution: "Puedes aplicar compresas frías si hay fiebre moderada o presionar heridas leves. DISCLAIMER: La IA no reemplaza al médico.",
             match(q) {
                 return (
-                    (q.includes("fiebre") && q.includes("alta")) ||
-                    q.includes("asma") ||
-                    q.includes("dificultad para respirar") ||
-                    (q.includes("dolor") && (q.includes("moderado") || q.includes("estomago") || q.includes("abdomen"))) ||
-                    (q.includes("corte") && q.includes("sangre")) ||
-                    (q.includes("vomito") && q.includes("frecuente")) ||
-                    (q.includes("alergia") && q.includes("ronchas"))
+                    containsAll(q, [["fiebre", "temperatura", "calentura"], ["alta", "39", "38.5", "38,5"]]) ||
+                    containsAny(q, ["asma", "sibilancias", "pitos", "broncoespasmo", "dificultad para respirar", "dificultad respirar", "falta de aire", "falta el aire"]) ||
+                    containsAll(q, [["dolor", "duele"], ["moderado", "fuerte", "estomago", "abdomen", "tripa", "barriga", "renal", "riñon", "vesicula"]]) ||
+                    containsAll(q, [["corte", "herida"], ["sangre", "sangra", "profundo", "puntos"]]) ||
+                    containsAny(q, ["vomito", "vomitos", "vomitando", "nauseas", "nausea", "no retiene"]) ||
+                    containsAll(q, [["alergia", "alergico", "reaccion"], ["ronchas", "urticaria", "hinchazon", "picores"]])
                 );
             }
         },
@@ -111,15 +108,12 @@ const TriageModule = {
             precaution: "Mantener una buena hidratación oral. Reposo y paracetamol según pauta estándar de su médico. DISCLAIMER: La IA no reemplaza al médico.",
             match(q) {
                 return (
-                    q.includes("gripe") ||
-                    q.includes("resfriado") ||
-                    q.includes("tos") ||
-                    q.includes("garganta") ||
-                    q.includes("esguince") ||
-                    q.includes("torcedura") ||
-                    (q.includes("dolor") && q.includes("leve")) ||
-                    q.includes("diarrea") ||
-                    q.includes("oido")
+                    containsAny(q, ["gripe", "resfriado", "catarro", "resfrio", "tos", "garganta", "dolor de garganta", "mocos", "congestion"]) ||
+                    containsAny(q, ["esguince", "torcedura", "luxacion", "golpe leve", "contusion"]) ||
+                    containsAll(q, [["dolor", "duele"], ["leve", "suave", "poco"]]) ||
+                    containsAny(q, ["diarrea", "gastroenteritis", "suelta", "estomago descompuesto"]) ||
+                    containsAny(q, ["oido", "dolor de oido", "otitis"]) ||
+                    containsAny(q, ["fiebre", "temperatura", "febricula", "calentura"])
                 );
             }
         }
@@ -183,7 +177,7 @@ const TriageModule = {
     },
 
     analyzeSymptoms(text) {
-        const q = text.toLowerCase();
+        const q = cleanText(text);
         const matched = this.rules.find(rule => rule.match(q));
 
         if (matched) {

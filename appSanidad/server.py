@@ -1,5 +1,7 @@
 from fastapi import FastAPI, UploadFile, File, Form, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
+from fastapi.responses import FileResponse
 from modules.clinical_analyzer import ClinicalAnalyzer
 import os
 import uuid
@@ -75,6 +77,22 @@ async def analyze_file(file: UploadFile = File(...), format_type: str = Form(...
     finally:
         if os.path.exists(file_path):
             os.remove(file_path)
+
+@app.get("/")
+async def read_index():
+    return FileResponse("index.html")
+
+@app.get("/styles.css")
+async def read_style():
+    return FileResponse("styles.css")
+
+@app.get("/app.js")
+async def read_app():
+    return FileResponse("app.js")
+
+app.mount("/modules", StaticFiles(directory="modules"), name="modules")
+app.mount("/assets", StaticFiles(directory="assets"), name="assets")
+app.mount("/ejemplos_medicos", StaticFiles(directory="ejemplos_medicos"), name="ejemplos_medicos")
 
 if __name__ == "__main__":
     import uvicorn
