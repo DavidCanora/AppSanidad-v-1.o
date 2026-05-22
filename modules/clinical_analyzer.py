@@ -56,6 +56,52 @@ Si la imagen NO es una imagen médica, devuelve:
 Si la calidad es insuficiente para diagnóstico, indícalo en calidad_imagen y describe lo que sí puedes observar."""
 
 
+PDF_EXTRACTION_PROMPT = """Eres un sistema automático de extracción de biomarcadores para analíticas de sangre y pruebas médicas en PDF.
+Analiza el documento proporcionado y extrae todos los biomarcadores con sus valores correspondientes, unidades y rangos de referencia normales.
+
+IMPORTANTE: Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta, sin texto previo ni posterior:
+{
+  "markers": [
+    {
+      "name": "nombre del biomarcador (ej: Hemoglobina, Glucosa, Colesterol LDL, etc.)",
+      "value": valor numérico o texto (ej: 11.2, 142, "Positivo"),
+      "min": valor mínimo normal (numérico, o null si no aplica),
+      "max": valor máximo normal (numérico, o null si no aplica),
+      "unit": "unidad de medida (ej: g/dL, mg/dL, uL, etc.)"
+    }
+  ]
+}
+"""
+
+CLINICAL_TRIAGE_PROMPT = """Eres un sistema de triaje clínico de élite que clasifica la urgencia de pacientes según el Protocolo de Triaje Manchester (Manchester Triage System).
+Analiza los siguientes síntomas del paciente y determina el nivel de prioridad:
+
+Nivel 1: Emergencia (Rojo, inmediato, parada, shock, dolor de pecho grave, asfixia).
+Nivel 2: Muy Urgente (Naranja, <10 min, dolor insoportable, sospecha de ictus, fiebre >40 en bebés, quemaduras severas).
+Nivel 3: Urgente (Amarillo, <60 min, dolor moderado de abdomen, asma moderada, vómitos frecuentes).
+Nivel 4: Menos Urgente (Verde, <120 min, síntomas catarrales, torceduras leves, diarrea leve).
+Nivel 5: No Urgente (Azul, sin prisa, consultas generales, recetas).
+
+IMPORTANTE: Responde ÚNICAMENTE con un objeto JSON válido con esta estructura exacta, sin texto previo ni posterior:
+{{
+  "priority": {{
+    "name": "Emergencia (Nivel 1) | Muy Urgente (Nivel 2) | Urgente (Nivel 3) | Menos Urgente (Nivel 4) | No Urgente (Nivel 5)",
+    "class": "emergency | very-urgent | urgent | less-urgent | non-urgent",
+    "color": "#ff3b30 | #ff9f0a | #ffd60a | #30d158 | #007aff",
+    "angle": 90 | 45 | 0 | -45 | -90,
+    "wait": "Inmediata | < 10 minutos | < 60 minutos | < 120 minutos | Sin urgencia de tiempo",
+    "dept": "nombre del departamento clínico recomendado",
+    "desc": "descripción de la urgencia determinada"
+  }},
+  "recommendation": "Recomendación clínica detallada y plan de acción (mínimo 2 frases).",
+  "precaution": "Precauciones críticas a tener en cuenta. DISCLAIMER: La IA no reemplaza al diagnóstico médico profesional."
+}}
+
+Síntomas del paciente:
+{symptoms}
+"""
+
+
 class DocumentProcessor(abc.ABC):
     @abc.abstractmethod
     def extract_features(self, file_path: str) -> Any:
@@ -128,15 +174,47 @@ class PDFAnalyzer(DocumentProcessor):
         },
     ]
 
-    import random as _rand
-
     def extract_features(self, file_path: str) -> Dict[str, Any]:
-        import random
-        return random.choice(self.ANALYTIC_CASES)
+        if not GEMINI_AVAILABLE:
+            import random
+            return random.choice(self.ANALYTIC_CASES)
+        
+        api_key = os.environ.get("GEMINI_API_KEY", "")
+        if not api_key:
+            import random
+            return random.choice(self.ANALYTIC_CASES)
+
+        try:
+            client = genai.Client(api_key=api_key)
+            with open(file_path, "rb") as f:
+                pdf_bytes = f.read()
+
+            response = client.models.generate_content(
+                model="gemini-2.5-flash",
+                contents=[
+                    types.Part.from_bytes(
+                        data=pdf_bytes,
+                        mime_type="application/pdf"
+                    ),
+                    PDF_EXTRACTION_PROMPT
+                ],
+                config=types.GenerateContentConfig(
+                    temperature=0.1,
+                    max_output_tokens=2048,
+                )
+            )
+
+            raw = response.text.strip()
+            raw = re.sub(r"^```(?:json)?\s*", "", raw)
+            raw = re.sub(r"\s*```$", "", raw)
+            return json.loads(raw)
+        except Exception:
+            import random
+            return random.choice(self.ANALYTIC_CASES)
 
 
 class Biomarker:
-    def __init__(self, name: str, value: float, unit: str, normal_min: float, normal_max: float):
+    def __init__(self, name: str, value: Any, unit: str, normal_min: Any, normal_max: Any):
         self.name = name
         self.value = value
         self.unit = unit
@@ -144,13 +222,36 @@ class Biomarker:
         self.normal_max = normal_max
 
     def requires_attention(self) -> bool:
-        return not (self.normal_min <= self.value <= self.normal_max)
+        try:
+            val_f = float(self.value)
+            min_f = float(self.normal_min) if self.normal_min is not None else None
+            max_f = float(self.normal_max) if self.normal_max is not None else None
+            if min_f is not None and val_f < min_f:
+                return True
+            if max_f is not None and val_f > max_f:
+                return True
+            return False
+        except (ValueError, TypeError):
+            val_s = str(self.value).strip().lower()
+            if val_s in ("positivo", "detectado", "reactivo", "alterado"):
+                return True
+            return False
 
     def to_dict(self) -> Dict[str, Any]:
+        ref_str = ""
+        if self.normal_min is not None and self.normal_max is not None:
+            ref_str = f"{self.normal_min} - {self.normal_max} {self.unit}"
+        elif self.normal_min is not None:
+            ref_str = f">= {self.normal_min} {self.unit}"
+        elif self.normal_max is not None:
+            ref_str = f"<= {self.normal_max} {self.unit}"
+        else:
+            ref_str = "Negativo"
+        
         return {
             "biomarcador": self.name,
-            "valor_medido": f"{self.value} {self.unit}",
-            "rango_normal": f"{self.normal_min} - {self.normal_max} {self.unit}",
+            "valor_medido": f"{self.value} {self.unit}".strip(),
+            "rango_normal": ref_str,
             "requiere_atencion": self.requires_attention()
         }
 
@@ -254,13 +355,39 @@ class ClinicalAnalyzer:
     def _process_pdf(self, file_path: str) -> List[Dict[str, Any]]:
         case = self.pdf_analyzer.extract_features(file_path)
         results = []
-        for marker in case["markers"]:
+        for marker in case.get("markers", []):
             bio = Biomarker(
-                name=marker["name"],
-                value=marker["value"],
-                unit=marker["unit"],
-                normal_min=marker["min"],
-                normal_max=marker["max"],
+                name=marker.get("name", "Biomarcador"),
+                value=marker.get("value", 0),
+                unit=marker.get("unit", ""),
+                normal_min=marker.get("min"),
+                normal_max=marker.get("max"),
             )
             results.append(bio.to_dict())
         return results
+
+    def analyze_triage_symptoms(self, symptoms: str) -> Dict[str, Any]:
+        if not GEMINI_AVAILABLE:
+            raise RuntimeError("SDK de Google Generative AI no instalado.")
+        
+        api_key = os.environ.get("GEMINI_API_KEY", "")
+        if not api_key:
+            raise RuntimeError("Variable de entorno GEMINI_API_KEY no configurada.")
+
+        client = genai.Client(api_key=api_key)
+        formatted_prompt = CLINICAL_TRIAGE_PROMPT.format(symptoms=symptoms)
+
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[formatted_prompt],
+            config=types.GenerateContentConfig(
+                temperature=0.2,
+                max_output_tokens=1024,
+            )
+        )
+
+        raw = response.text.strip()
+        raw = re.sub(r"^```(?:json)?\s*", "", raw)
+        raw = re.sub(r"\s*```$", "", raw)
+        return json.loads(raw)
+

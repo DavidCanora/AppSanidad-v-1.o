@@ -38,11 +38,24 @@ def _secure_extension(filename: str) -> str:
         raise ValueError(f"Extensión '{ext}' no permitida.")
     return ext
 
+from pydantic import BaseModel
+
+class TriageRequest(BaseModel):
+    symptoms: str
+
 def _validate_image_bytes(content: bytes, ext: str):
     is_png = content.startswith(PNG_SIG)
     is_jpeg = any(content.startswith(sig) for sig in JPEG_SIGS)
     if not (is_png or is_jpeg):
         raise ValueError("El contenido no es una imagen válida (solo PNG o JPEG).")
+
+@app.post("/api/v1/triage")
+async def analyze_triage(req: TriageRequest):
+    try:
+        result = analyzer.analyze_triage_symptoms(req.symptoms)
+        return result
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
 
 @app.post("/api/v1/analyze")
 async def analyze_file(file: UploadFile = File(...), format_type: str = Form(...)):

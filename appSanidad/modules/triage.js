@@ -136,9 +136,9 @@ const TriageModule = {
     },
 
     registerEvents() {
-        this.sendBtn.addEventListener("click", () => this.handleSendMessage());
+        this.sendBtn.addEventListener("click", () => this.handleUserInput());
         this.chatInput.addEventListener("keypress", (e) => {
-            if (e.key === "Enter") this.handleSendMessage();
+            if (e.key === "Enter") this.handleUserInput();
         });
     },
 
@@ -155,7 +155,7 @@ const TriageModule = {
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
     },
 
-    handleSendMessage() {
+    async handleUserInput() {
         const text = this.chatInput.value.trim();
         if (!text) return;
 
@@ -168,12 +168,26 @@ const TriageModule = {
         this.chatMessages.appendChild(typingDiv);
         this.chatMessages.scrollTop = this.chatMessages.scrollHeight;
 
-        setTimeout(() => {
+        try {
+            const res = await fetch(`${window.getApiBaseUrl()}/api/v1/triage`, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({ symptoms: text }),
+                signal: AbortSignal.timeout(15000)
+            });
+            if (!res.ok) throw new Error();
+            const evaluation = await res.json();
+            typingDiv.remove();
+            this.applyTriageResult(evaluation);
+            this.addMessage("bot", `Evaluación completada. Se ha clasificado al paciente como: "${evaluation.priority.name}". ${evaluation.recommendation}`);
+        } catch (err) {
             typingDiv.remove();
             const evaluation = this.analyzeSymptoms(text);
             this.applyTriageResult(evaluation);
-            this.addMessage("bot", `Evaluación completada. Se ha clasificado al paciente como: "${evaluation.priority.name}". ${evaluation.recommendation}`);
-        }, 1200);
+            this.addMessage("bot", `[Modo Offline] Evaluación completada. Clasificación: "${evaluation.priority.name}". ${evaluation.recommendation}`);
+        }
     },
 
     analyzeSymptoms(text) {

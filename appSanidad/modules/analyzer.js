@@ -106,6 +106,11 @@ const AnalyzerModule = {
         const dashFileInput  = document.getElementById("dashboard-file-input");
 
         if (dashUploadZone) {
+            dashUploadZone.addEventListener("click", (e) => {
+                if (e.target !== dashFileInput && !e.target.closest("#dashboard-select-btn")) {
+                    dashFileInput.click();
+                }
+            });
             dashUploadZone.addEventListener("dragover", (e) => {
                 e.preventDefault();
                 dashUploadZone.classList.add("dragover");
