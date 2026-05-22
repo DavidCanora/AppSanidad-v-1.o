@@ -2,6 +2,7 @@ import os
 import json
 import re
 import abc
+import time
 from typing import Dict, List, Any
 
 try:
@@ -123,19 +124,29 @@ class GeminiVisionAnalyzer(DocumentProcessor):
         if img.mode not in ("RGB", "L"):
             img = img.convert("RGB")
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[MEDICAL_VISION_PROMPT, img],
-            config=types.GenerateContentConfig(
-                temperature=0.1,
-                max_output_tokens=2048,
-            )
-        )
-
-        raw = response.text.strip()
-        raw = re.sub(r"^```(?:json)?\s*", "", raw)
-        raw = re.sub(r"\s*```$", "", raw)
-        return json.loads(raw)
+        last_ex = None
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[MEDICAL_VISION_PROMPT, img],
+                    config=types.GenerateContentConfig(
+                        temperature=0.1,
+                        max_output_tokens=2048,
+                    )
+                )
+                raw = response.text.strip()
+                raw = re.sub(r"^```(?:json)?\s*", "", raw)
+                raw = re.sub(r"\s*```$", "", raw)
+                return json.loads(raw)
+            except Exception as e:
+                last_ex = e
+                err_msg = str(e).lower()
+                if "503" in err_msg or "429" in err_msg or "unavailable" in err_msg or "rate limit" in err_msg:
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                raise e
+        raise last_ex
 
 
 class PDFAnalyzer(DocumentProcessor):
@@ -189,25 +200,35 @@ class PDFAnalyzer(DocumentProcessor):
             with open(file_path, "rb") as f:
                 pdf_bytes = f.read()
 
-            response = client.models.generate_content(
-                model="gemini-2.5-flash",
-                contents=[
-                    types.Part.from_bytes(
-                        data=pdf_bytes,
-                        mime_type="application/pdf"
-                    ),
-                    PDF_EXTRACTION_PROMPT
-                ],
-                config=types.GenerateContentConfig(
-                    temperature=0.1,
-                    max_output_tokens=2048,
-                )
-            )
-
-            raw = response.text.strip()
-            raw = re.sub(r"^```(?:json)?\s*", "", raw)
-            raw = re.sub(r"\s*```$", "", raw)
-            return json.loads(raw)
+            last_ex = None
+            for attempt in range(3):
+                try:
+                    response = client.models.generate_content(
+                        model="gemini-2.5-flash",
+                        contents=[
+                            types.Part.from_bytes(
+                                data=pdf_bytes,
+                                mime_type="application/pdf"
+                            ),
+                            PDF_EXTRACTION_PROMPT
+                        ],
+                        config=types.GenerateContentConfig(
+                            temperature=0.1,
+                            max_output_tokens=2048,
+                        )
+                    )
+                    raw = response.text.strip()
+                    raw = re.sub(r"^```(?:json)?\s*", "", raw)
+                    raw = re.sub(r"\s*```$", "", raw)
+                    return json.loads(raw)
+                except Exception as e:
+                    last_ex = e
+                    err_msg = str(e).lower()
+                    if "503" in err_msg or "429" in err_msg or "unavailable" in err_msg or "rate limit" in err_msg:
+                        time.sleep(1.5 * (attempt + 1))
+                        continue
+                    raise e
+            raise last_ex
         except Exception:
             import random
             return random.choice(self.ANALYTIC_CASES)
@@ -272,10 +293,15 @@ class ClinicalAnalyzer:
         try:
             analysis = self.vision_analyzer.extract_features(file_path)
         except Exception as e:
+            err_msg = str(e)
+            user_friendly_msg = "El servicio de diagnóstico por IA de Google Gemini no se encuentra disponible temporalmente debido a alta demanda (Error 503). Por favor, reintente en unos momentos."
+            if "503" not in err_msg and "unavailable" not in err_msg.lower():
+                user_friendly_msg = f"Error al procesar la imagen con la IA: {err_msg}"
+                
             return [{
-                "biomarcador": "Error de análisis IA",
-                "valor_medido": str(e),
-                "rango_normal": "N/A",
+                "biomarcador": "⚠️ Error de Servicio IA",
+                "valor_medido": "Servicio Temporalmente Saturado",
+                "rango_normal": user_friendly_msg,
                 "requiere_atencion": True
             }]
 
@@ -377,17 +403,27 @@ class ClinicalAnalyzer:
         client = genai.Client(api_key=api_key)
         formatted_prompt = CLINICAL_TRIAGE_PROMPT.format(symptoms=symptoms)
 
-        response = client.models.generate_content(
-            model="gemini-2.5-flash",
-            contents=[formatted_prompt],
-            config=types.GenerateContentConfig(
-                temperature=0.2,
-                max_output_tokens=1024,
-            )
-        )
-
-        raw = response.text.strip()
-        raw = re.sub(r"^```(?:json)?\s*", "", raw)
-        raw = re.sub(r"\s*```$", "", raw)
-        return json.loads(raw)
+        last_ex = None
+        for attempt in range(3):
+            try:
+                response = client.models.generate_content(
+                    model="gemini-2.5-flash",
+                    contents=[formatted_prompt],
+                    config=types.GenerateContentConfig(
+                        temperature=0.2,
+                        max_output_tokens=1024,
+                    )
+                )
+                raw = response.text.strip()
+                raw = re.sub(r"^```(?:json)?\s*", "", raw)
+                raw = re.sub(r"\s*```$", "", raw)
+                return json.loads(raw)
+            except Exception as e:
+                last_ex = e
+                err_msg = str(e).lower()
+                if "503" in err_msg or "429" in err_msg or "unavailable" in err_msg or "rate limit" in err_msg:
+                    time.sleep(1.5 * (attempt + 1))
+                    continue
+                raise e
+        raise last_ex
 
